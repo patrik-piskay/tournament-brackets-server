@@ -1,7 +1,11 @@
 import express from 'express';
 import db from './database.js';
+import bodyParser from 'body-parser';
 
 const app = express();
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/', function(req, res) {
     res.send('Hello World!');
@@ -28,7 +32,14 @@ app.get('/get-tournament/:id', function(req, res) {
 });
 
 app.post('/create-tournament', function(req, res) {
-    res.send('Hello World!');
+    const name = req.body.name;
+    const players = req.body.players;
+
+    if (name && players) {
+        db.insertTournament(name, JSON.parse(players));
+    } else {
+        
+    }
 });
 
 app.post('/update-score/:matchId', function(req, res) {

@@ -1,4 +1,5 @@
 import sqlite3 from 'sqlite3';
+import crypto from 'crypto';
 
 const db = new sqlite3.Database('brackets.db');
 
@@ -22,27 +23,65 @@ db.serialize(() => {
     )`);
 
     db.run(`CREATE TABLE if not exists match (
-        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        id              TEXT PRIMARY KEY,
         tournament_id   INTEGER NOT NULL,
         player1_id      INTEGER DEFAULT NULL,
         player2_id      INTEGER DEFAULT NULL,
-        next_round_id   INTEGER DEFAULT NULL,
+        next_round_id   TEXT DEFAULT NULL,
         played_at       TIMESTAMP DEFAULT NULL
     )`);
 
     db.run(`INSERT INTO tournament (name) VALUES ('t1'), ('t2')`);
     db.run(`INSERT INTO player (name, tournament_id) VALUES
         ('Pato', 1),
-        ('Majka', 1),
-        ('Jozo', 1),
-        ('Rudo', 2),
-        ('Kika', 2)
+        ('Majka', 1)
     `);
-    db.run(`INSERT INTO match (tournament_id, player1_id, player2_id, next_round_id) VALUES
-        (1, null, 3, null),
-        (1, 1, 2, 1)
-    `);
+    // db.run(`INSERT INTO match (tournament_id, player1_id, player2_id, next_round_id) VALUES
+    //     (1, null, 3, null),
+    //     (1, 1, 2, 1)
+    // `);
 });
+
+export const insertMatch = ({ id, tournamentId, player1, player2, nextRoundId }) => {
+    db.run(
+        `INSERT INTO match (id, tournament_id, player1_id, player2_id, next_round_id) VALUES (?,?,?,?,?)`,
+        id, tournamentId, player1, player2, nextRoundId
+    );
+};
+
+
+export const generateMatches = (tournamentId, players, nextRoundId = null) => {
+    const id = crypto.randomBytes(10).toString('hex');
+
+    if (players.length <= 2) {
+        // first round matches
+        const [player1, player2] = players;
+
+        return [{
+            id,
+            tournamentId,
+            player1,
+            player2: player2 || null,
+            nextRoundId
+        }];
+    } else {
+        const middle = Math.ceil(players.length / 2);
+        const group1 = players.slice(0, middle);
+        const group2 = players.slice(middle);
+
+        return [
+            {
+                id,
+                tournamentId,
+                player1: null,
+                player2: null,
+                nextRoundId
+            },
+            ...generateMatches(tournamentId, group1, id),
+            ...generateMatches(tournamentId, group2, id)
+        ];
+    }
+};
 
 export default {
     getTournaments: (cb) => {
@@ -66,7 +105,15 @@ export default {
         );
     },
 
-    insertTournament: (name) => {
-        db.run(`INSERT INTO tournament (name) VALUES (?)`, name);
+    insertTournament: (name, players) => {
+        db.run(`INSERT INTO tournament (name) VALUES (?)`, [name], function(err) {
+            if (!err && this.lastID) {
+                const matches = generateMatches(this.lastID, players);
+
+                matches.forEach((match) => {
+                    insertMatch(match);
+                });
+            }
+        });
     }
 };
