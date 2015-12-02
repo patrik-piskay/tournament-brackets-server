@@ -1,0 +1,8 @@
+# Merge tools
+*.orig
+
+# Dependency directory
+*/node_modules/
+
+#SQLite db file
+*.db
