@@ -105,7 +105,7 @@
     "no-with": 2,
     "block-scoped-var": 2,
     "brace-style": 2,
-    "camelcase": [2, {"properties": "always"}],
+    "camelcase": [2, {"properties": "never"}],
     "comma-spacing": 2,
     "comma-style": [2],
     "complexity": [0, 11],
