@@ -1,11 +1,14 @@
 import express from 'express';
-import db from './database.js';
+import DB from './database.js';
 import bodyParser from 'body-parser';
+import { shuffle } from 'lodash/collection';
 
 const app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+const db = new DB('brackets.db');
 
 app.get('/', function(req, res) {
     res.send('Hello World!');
@@ -35,12 +38,18 @@ app.get('/get-tournament/:id', function(req, res) {
 
 app.post('/create-tournament', function(req, res) {
     const name = req.body.name;
-    const players = req.body.players;
+    const playerNames = JSON.parse(req.body.players);
 
-    if (name && players) {
-        db.insertTournament(name, JSON.parse(players), (tournamentId, err) => {
+    if (name && playerNames) {
+        db.insertPlayers(playerNames, (players, err) => {
             if (!err) {
-                res.status(200).json({ tournamentId });
+                db.insertTournament(name, shuffle(players), (tournamentId, error) => {
+                    if (!error) {
+                        res.status(200).json({ tournamentId });
+                    } else {
+                        res.status(500).json(error);
+                    }
+                });
             } else {
                 res.status(500).json(err);
             }

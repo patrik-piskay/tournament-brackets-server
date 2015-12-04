@@ -1,60 +1,5 @@
 import sqlite3 from 'sqlite3';
 import crypto from 'crypto';
-import { shuffle } from 'lodash/collection';
-
-const db = new sqlite3.Database('brackets.db');
-
-db.serialize(() => {
-    db.run('DROP TABLE if exists tournament');
-    db.run('DROP TABLE if exists player');
-    db.run('DROP TABLE if exists match');
-
-    db.run(`CREATE TABLE if not exists tournament (
-        id              INTEGER PRIMARY KEY AUTOINCREMENT,
-        name            TEXT,
-        finished        BOOLEAN DEFAULT 0,
-        created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`);
-
-    // t_id asi nie potrebne
-    db.run(`CREATE TABLE if not exists player (
-        id              INTEGER PRIMARY KEY AUTOINCREMENT,
-        name            TEXT,
-        tournament_id   INTEGER
-    )`);
-
-    db.run(`CREATE TABLE if not exists match (
-        id              TEXT PRIMARY KEY,
-        tournament_id   INTEGER NOT NULL,
-        player1_id      INTEGER DEFAULT NULL,
-        player2_id      INTEGER DEFAULT NULL,
-        player1_score   INTEGER DEFAULT NULL,
-        player2_score   INTEGER DEFAULT NULL,
-        next_round_id   TEXT DEFAULT NULL,
-        played_at       TIMESTAMP DEFAULT NULL
-    )`);
-
-    // db.run(`INSERT INTO tournament (name) VALUES ('t1'), ('t2')`);
-    db.run(`INSERT INTO player (name, tournament_id) VALUES
-        ('Pato', 1),
-        ('Majka', 1),
-        ('Rudo', 1),
-        ('Kika', 1),
-        ('Jozo', 1)
-    `);
-    // db.run(`INSERT INTO match (tournament_id, player1_id, player2_id, next_round_id) VALUES
-    //     (1, null, 3, null),
-    //     (1, 1, 2, 1)
-    // `);
-});
-
-export const insertMatch = ({ id, tournamentId, player1, player2, nextRoundId }) => {
-    db.run(
-        `INSERT INTO match (id, tournament_id, player1_id, player2_id, next_round_id) VALUES (?,?,?,?,?)`,
-        id, tournamentId, player1, player2, nextRoundId
-    );
-};
-
 
 export const generateMatches = (tournamentId, players, nextRoundId = null) => {
     const id = crypto.randomBytes(10).toString('hex');
@@ -66,8 +11,8 @@ export const generateMatches = (tournamentId, players, nextRoundId = null) => {
         return [{
             id,
             tournamentId,
-            player1,
-            player2: player2 || null,
+            player1: player1.id,
+            player2: player2 && player2.id || null,
             nextRoundId
         }];
     } else {
@@ -89,75 +34,115 @@ export const generateMatches = (tournamentId, players, nextRoundId = null) => {
     }
 };
 
-const getMatch = (matchId, cb) => {
-    db.all(`SELECT *, datetime(played_at, 'localtime') as played_at FROM match WHERE id = ?`, matchId, (err, rows) => {
-        cb(rows.length, rows[0], err);
-    });
-};
+class DB {
+    constructor(name) {
+        this._db = new sqlite3.Database(name);
 
-const sendWinnerToTheNextRound = (nextRoundId, winnerId, cb) => {
-    getMatch(nextRoundId, (exists, match, error) => {
-        if (exists) {
-            let slot = null;
-            if (match.player1_id === null) {
-                slot = 'player1_id';
-            } else if (match.player2_id === null) {
-                slot = 'player2_id';
+        this._init();
+    }
+
+    _init() {
+        this._db.serialize(() => {
+            this._db.run('DROP TABLE if exists tournament');
+            this._db.run('DROP TABLE if exists player');
+            this._db.run('DROP TABLE if exists match');
+
+            this._db.run(`CREATE TABLE if not exists tournament (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                name            TEXT,
+                finished        BOOLEAN DEFAULT 0,
+                created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`);
+
+            this._db.run(`CREATE TABLE if not exists player (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                name            TEXT
+            )`);
+
+            this._db.run(`CREATE TABLE if not exists match (
+                id              TEXT PRIMARY KEY,
+                tournament_id   INTEGER NOT NULL,
+                player1_id      INTEGER DEFAULT NULL,
+                player2_id      INTEGER DEFAULT NULL,
+                player1_score   INTEGER DEFAULT NULL,
+                player2_score   INTEGER DEFAULT NULL,
+                next_round_id   TEXT DEFAULT NULL,
+                played_at       TIMESTAMP DEFAULT NULL
+            )`);
+        });
+    }
+
+    _insertMatch({ id, tournamentId, player1, player2, nextRoundId }) {
+        this._db.run(
+            `INSERT INTO match (id, tournament_id, player1_id, player2_id, next_round_id) VALUES (?,?,?,?,?)`,
+            id, tournamentId, player1, player2, nextRoundId
+        );
+    }
+
+    _sendWinnerToTheNextRound(nextRoundId, winnerId, cb) {
+        this.getMatch(nextRoundId, (exists, match, error) => {
+            if (exists) {
+                let slot = null;
+                if (match.player1_id === null) {
+                    slot = 'player1_id';
+                } else if (match.player2_id === null) {
+                    slot = 'player2_id';
+                } else {
+                    cb(null, {
+                        err: 'Both players are already assigned to the match'
+                    });
+                    return;
+                }
+
+                this._db.run(`UPDATE match SET
+                            ${slot} = $winnerId
+                        WHERE id = $id`, {
+                            $id: nextRoundId,
+                            $winnerId: winnerId
+                        }, (err) => {
+                            if (!err) {
+                                cb(1);
+                            } else {
+                                cb(null, err);
+                            }
+                        }
+                );
             } else {
-                cb(null, {
-                    err: 'Both players are already assigned to the match'
-                });
-                return;
+                // test this
+                cb(null, error);
             }
+        });
+    }
 
-            db.run(`UPDATE match SET
-                        ${slot} = $winnerId
-                    WHERE id = $id`, {
-                        $id: nextRoundId,
-                        $winnerId: winnerId
-                    }, function(err) {
-                        if (!err) {
+    _setTournamentAsFinished(tournamentId, cb) {
+        this._db.run(`UPDATE tournament SET
+                    finished = 1
+                WHERE id = ?`, tournamentId, function(err) {
+                    if (!err) {
+                        if (this.changes) {
                             cb(1);
                         } else {
-                            cb(null, err);
+                            cb(null, {
+                                err: 'Tournament does not exists'
+                            });
                         }
-                    }
-            );
-        } else {
-            // test this
-            cb(null, error);
-        }
-    });
-};
-
-const setTournamentAsFinished = (tournamentId, cb) => {
-    db.run(`UPDATE tournament SET
-                finished = 1
-            WHERE id = ?`, tournamentId, function(err) {
-                if (!err) {
-                    if (this.changes) {
-                        cb(1);
                     } else {
-                        cb(null, {
-                            err: 'Tournament does not exists'
-                        });
+                        cb(null, err);
                     }
-                } else {
-                    cb(null, err);
                 }
-            }
-    );
-};
+        );
+    }
 
-export default {
-    getTournaments: (cb) => {
-        db.all(`SELECT *, datetime(created_at, 'localtime') as created_at FROM tournament`, (err, rows) => {
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    getTournaments(cb) {
+        this._db.all(`SELECT *, datetime(created_at, 'localtime') as created_at FROM tournament`, (err, rows) => {
             cb(rows, err);
         });
-    },
+    }
 
-    getTournament: (tournamentId, cb) => {
-        db.all(`
+    getTournament(tournamentId, cb) {
+        this._db.all(`
             SELECT tournament.*, datetime(created_at, 'localtime') as created_at,
                 match.*, datetime(played_at, 'localtime') as played_at,
                 player1.name as player1, player2.name as player2
@@ -202,15 +187,38 @@ export default {
                 }
             }
         );
-    },
+    }
 
-    insertTournament: (name, players, cb) => {
-        db.run(`INSERT INTO tournament (name) VALUES (?)`, [name], function(err) {
+    insertPlayers(playerNames, cb) {
+        let players = [];
+
+        playerNames.forEach((name) => {
+            this._db.run(`INSERT INTO player (name) VALUES (?)`, [name], function(err) {
+                if (!err && this.lastID) {
+                    players.push({
+                        id: this.lastID,
+                        name
+                    });
+
+                    if (players.length === playerNames.length) {
+                        cb(players);
+                    }
+                } else {
+                    cb(null, err);
+                }
+            });
+        });
+    }
+
+    insertTournament(name, players, cb) {
+        const self = this;
+
+        this._db.run(`INSERT INTO tournament (name) VALUES (?)`, [name], function(err) {
             if (!err && this.lastID) {
-                const matches = generateMatches(this.lastID, shuffle(players));
+                const matches = generateMatches(this.lastID, players);
 
                 matches.forEach((match) => {
-                    insertMatch(match);
+                    self._insertMatch(match);
                 });
 
                 cb(this.lastID);
@@ -218,14 +226,20 @@ export default {
                 cb(null, err);
             }
         });
-    },
+    }
 
-    getMatch,
+    getMatch(matchId, cb) {
+        this._db.all(`SELECT *, datetime(played_at, 'localtime') as played_at FROM match WHERE id = ?`, matchId, (err, rows) => {
+            cb(rows.length, rows[0], err);
+        });
+    }
 
-    updateScore: (matchId, player1Score, player2Score, cb) => {
-        getMatch(matchId, (exists, match, err) => {
+    updateScore(matchId, player1Score, player2Score, cb) {
+        const self = this;
+
+        this.getMatch(matchId, (exists, match, err) => {
             if (exists) {
-                db.run(`UPDATE match SET
+                this._db.run(`UPDATE match SET
                             player1_score = $player1Score,
                             player2_score = $player2Score,
                             played_at = datetime('now')
@@ -237,11 +251,11 @@ export default {
                             if (!err) {
                                 if (match.next_round_id) {
                                     const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
-                                    sendWinnerToTheNextRound(match.next_round_id, winnerId, (success, _error) => {
+                                    self._sendWinnerToTheNextRound(match.next_round_id, winnerId, (success, _error) => {
                                         cb(success, _error);
                                     });
                                 } else {
-                                    setTournamentAsFinished(match.tournament_id, (success, _error) => {
+                                    self._setTournamentAsFinished(match.tournament_id, (success, _error) => {
                                         cb(success, _error);
                                     });
                                 }
@@ -256,4 +270,6 @@ export default {
             }
         });
     }
-};
+}
+
+export default DB;
