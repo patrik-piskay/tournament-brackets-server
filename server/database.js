@@ -1,8 +1,14 @@
 import sqlite3 from 'sqlite3';
 import crypto from 'crypto';
 
-export const generateMatches = (tournamentId, players, nextRoundId = null) => {
-    const id = crypto.randomBytes(10).toString('hex');
+const getId = () => crypto.randomBytes(10).toString('hex');
+
+export const generateMatches = (tournamentId, players, nextRoundId = null, idGenerator = getId) => {
+    if (!players || !players.length) {
+        return [];
+    }
+
+    const id = idGenerator();
 
     if (players.length <= 2) {
         // first round matches
@@ -16,7 +22,11 @@ export const generateMatches = (tournamentId, players, nextRoundId = null) => {
             nextRoundId
         }];
     } else {
-        const middle = Math.ceil(players.length / 2);
+        let middle = Math.ceil(players.length / 2);
+        if (middle % 2 !== 0) {
+            // odd number of players in both groups, move one player to the other group
+            middle = middle + 1;
+        }
         const group1 = players.slice(0, middle);
         const group2 = players.slice(middle);
 
@@ -28,8 +38,8 @@ export const generateMatches = (tournamentId, players, nextRoundId = null) => {
                 player2: null,
                 nextRoundId
             },
-            ...generateMatches(tournamentId, group1, id),
-            ...generateMatches(tournamentId, group2, id)
+            ...generateMatches(tournamentId, group1, id, idGenerator),
+            ...generateMatches(tournamentId, group2, id, idGenerator)
         ];
     }
 };
@@ -72,10 +82,23 @@ class DB {
         });
     }
 
-    _insertMatch({ id, tournamentId, player1, player2, nextRoundId }) {
+    _insertTournament(name, cb) {
+        this._db.run(`INSERT INTO tournament (name) VALUES (?)`, [name], function(err) {
+            if (!err && this.lastID) {
+                cb(this.lastID);
+            } else {
+                cb(null, err);
+            }
+        });
+    }
+
+    _insertMatch({ id, tournamentId, player1, player2, nextRoundId }, cb) {
         this._db.run(
             `INSERT INTO match (id, tournament_id, player1_id, player2_id, next_round_id) VALUES (?,?,?,?,?)`,
-            id, tournamentId, player1, player2, nextRoundId
+            [id, tournamentId, player1, player2, nextRoundId],
+            function(err) {
+                cb(this.lastID, err);
+            }
         );
     }
 
@@ -171,8 +194,8 @@ class DB {
                             id,
                             player1,
                             player2,
-                            player1_score,
-                            player2_score,
+                            player1Score: player1_score,
+                            player2Score: player2_score,
                             nextRoundId: next_round_id,
                             playedAt: played_at
                         };
@@ -190,6 +213,11 @@ class DB {
     }
 
     insertPlayers(playerNames, cb) {
+        if (!playerNames || !playerNames.length) {
+            cb({});
+            return;
+        }
+
         let players = [];
 
         playerNames.forEach((name) => {
@@ -210,18 +238,31 @@ class DB {
         });
     }
 
-    insertTournament(name, players, cb) {
-        const self = this;
+    getPlayers(cb) {
+        this._db.all(`SELECT * FROM player`, (err, rows) => {
+            cb(rows, err);
+        });
+    }
 
-        this._db.run(`INSERT INTO tournament (name) VALUES (?)`, [name], function(err) {
-            if (!err && this.lastID) {
-                const matches = generateMatches(this.lastID, players);
+    createTournament(name, players, cb) {
+        this._insertTournament(name, (tournamentId, err) => {
+            if (tournamentId) {
+                const matches = generateMatches(tournamentId, players);
+                let matchesInserted = 0;
 
                 matches.forEach((match) => {
-                    self._insertMatch(match);
-                });
+                    this._insertMatch(match, (inserted, error) => {
+                        if (inserted) {
+                            matchesInserted++;
 
-                cb(this.lastID);
+                            if (matchesInserted === (players.length % 2 === 0 ? players.length - 1 : players.length)) {
+                                cb(tournamentId);
+                            }
+                        } else {
+                            cb(null, error);
+                        }
+                    });
+                });
             } else {
                 cb(null, err);
             }
@@ -234,11 +275,25 @@ class DB {
         });
     }
 
-    updateScore(matchId, player1Score, player2Score, cb) {
+    setScore(matchId, player1Score, player2Score, cb) {
+        if (player1Score === player2Score) {
+            cb(null, {
+                err: 'Match has to have a winner, it can not end in a draw'
+            });
+            return;
+        }
+
         const self = this;
 
         this.getMatch(matchId, (exists, match, err) => {
             if (exists) {
+                if (match.player1_score !== null && match.player2_score !== null) {
+                    cb(null, {
+                        err: 'Score has already been set for this match'
+                    });
+                    return;
+                }
+
                 this._db.run(`UPDATE match SET
                             player1_score = $player1Score,
                             player2_score = $player2Score,
