@@ -43,7 +43,7 @@ app.post('/create-tournament', function(req, res) {
     if (name && playerNames) {
         db.insertPlayers(playerNames, (players, err) => {
             if (!err) {
-                db.insertTournament(name, shuffle(players), (tournamentId, error) => {
+                db.createTournament(name, shuffle(players), (tournamentId, error) => {
                     if (!error) {
                         res.status(200).json({ tournamentId });
                     } else {
@@ -73,7 +73,7 @@ app.get('/get-match/:matchId', function(req, res) {
     });
 });
 
-app.put('/update-score/:matchId', function(req, res) {
+app.post('/set-score/:matchId', function(req, res) {
     const matchId = req.params.matchId;
     const player1Score = parseInt(req.body.player1_score, 10);
     const player2Score = parseInt(req.body.player2_score, 10);
@@ -83,7 +83,7 @@ app.put('/update-score/:matchId', function(req, res) {
         res.status(400);
     }
 
-    db.updateScore(matchId, player1Score, player2Score, (result, err) => {
+    db.setScore(matchId, player1Score, player2Score, (result, err) => {
         if (!err) {
             res.status(200).json(result);
         } else {

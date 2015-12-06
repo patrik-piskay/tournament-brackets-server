@@ -287,6 +287,13 @@ class DB {
 
         this.getMatch(matchId, (exists, match, err) => {
             if (exists) {
+                if (match.player1_id === null || match.player2_id === null) {
+                    cb(null, {
+                        err: 'Less than 2 players are assigned to the match, cannot set score until both players are assigned to it.'
+                    });
+                    return;
+                }
+
                 if (match.player1_score !== null && match.player2_score !== null) {
                     cb(null, {
                         err: 'Score has already been set for this match'

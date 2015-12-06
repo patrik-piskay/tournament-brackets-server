@@ -190,6 +190,38 @@ describe('Database model', () => {
         });
     });
 
+    it('should return error when trying to set a score on match where less than 2 players are assigned to it', (done) => {
+        db._insertMatch({
+            id: 1,
+            tournamentId: 1,
+            player1: null,
+            player2: null,
+            nextRoundId: null
+        }, (matchId) => {
+            db.setScore(matchId, 2, 1, (success, error) => {
+                assert.equal(success, null);
+                assert.equal(error.err, 'Less than 2 players are assigned to the match, cannot set score until both players are assigned to it.');
+
+                done();
+            });
+        });
+
+        db._insertMatch({
+            id: 1,
+            tournamentId: 1,
+            player1: 1,
+            player2: null,
+            nextRoundId: null
+        }, (matchId) => {
+            db.setScore(matchId, 2, 1, (success, error) => {
+                assert.equal(success, null);
+                assert.equal(error.err, 'Less than 2 players are assigned to the match, cannot set score until both players are assigned to it.');
+
+                done();
+            });
+        });
+    });
+
     it('should update score in match and set "played at" timestamps', (done) => {
         db._insertTournament('Test', (tournamentId) => {
             db._insertMatch({
