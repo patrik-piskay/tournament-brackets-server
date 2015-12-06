@@ -62,6 +62,11 @@ class DB {
 
     _sendWinnerToTheNextRound(nextRoundId, winnerId, cb) {
         this.getMatch(nextRoundId, (exists, match, error) => {
+            if (error) {
+                cb(null, error);
+                return;
+            }
+
             if (exists) {
                 let slot = null;
                 if (match.player1_id === null) {
@@ -89,8 +94,9 @@ class DB {
                         }
                 );
             } else {
-                // test this
-                cb(null, error);
+                cb(null, {
+                    err: 'Next round match does not exists'
+                });
             }
         });
     }
@@ -251,6 +257,11 @@ class DB {
         const self = this;
 
         this.getMatch(matchId, (exists, match, err) => {
+            if (err) {
+                cb(null, err);
+                return;
+            }
+
             if (exists) {
                 if (match.player1_id === null || match.player2_id === null) {
                     cb(null, {
@@ -292,8 +303,9 @@ class DB {
                         }
                 );
             } else {
-                // test this
-                cb(null, err);
+                cb(null, {
+                    err: 'Match does not exists'
+                });
             }
         });
     }

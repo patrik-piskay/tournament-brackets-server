@@ -188,6 +188,14 @@ describe('Database model', () => {
         });
     });
 
+    it('should return error when trying to update score on non existant match', (done) => {
+        db.setScore(0, 2, 1, (success, error) => {
+            assert.equal(error.err, 'Match does not exists');
+
+            done();
+        });
+    });
+
     it('should return error when trying to set a score on match where score has already been set', (done) => {
         db._insertMatch({
             id: 1,
@@ -281,6 +289,14 @@ describe('Database model', () => {
                     done();
                 });
             });
+        });
+    });
+
+    it('should fail when next round match does not exists', (done) => {
+        db._sendWinnerToTheNextRound(0, 1, (success, error) => {
+            assert.equal(error.err, 'Next round match does not exists');
+
+            done();
         });
     });
 
