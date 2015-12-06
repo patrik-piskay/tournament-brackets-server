@@ -1,7 +1,8 @@
 import express from 'express';
-import DB from './database.js';
 import bodyParser from 'body-parser';
 import { shuffle } from 'lodash/collection';
+
+import DB from './database.js';
 
 const app = express();
 
@@ -11,7 +12,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const db = new DB('brackets.db');
 
 app.get('/', function(req, res) {
-    res.send('Hello World!');
+    res.json('Hi there!');
 });
 
 app.get('/get-tournaments', function(req, res) {

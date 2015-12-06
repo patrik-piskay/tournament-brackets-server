@@ -50,8 +50,7 @@ describe('Bracket generator', () => {
         for (let i = 2; i <= 50; i++) {
             const result = generateMatches(1, makePlayers(i), null);
 
-            // FIX
-            assert.equal(result.length, i % 2 === 0 ? i - 1 : i);
+            assert.equal(result.length, i - 1);
         }
     });
 
@@ -91,13 +90,14 @@ describe('Bracket generator', () => {
         resetIdGenerator();
         const result5 = generateMatches(1, makePlayers(6), null, getId);
         resetIdGenerator();
-        const result6 = generateMatches(1, makePlayers(8), null, getId);
+        const result6 = generateMatches(1, makePlayers(7), null, getId);
+        resetIdGenerator();
+        const result7 = generateMatches(1, makePlayers(8), null, getId);
 
         assert.equal(result1[0].nextRoundId, null);
 
         assert.equal(result2[0].nextRoundId, null);
         assert.equal(result2[1].nextRoundId, 1);
-        assert.equal(result2[2].nextRoundId, 1);
 
         assert.equal(result3[0].nextRoundId, null);
         assert.equal(result3[1].nextRoundId, 1);
@@ -106,8 +106,7 @@ describe('Bracket generator', () => {
         assert.equal(result4[0].nextRoundId, null);
         assert.equal(result4[1].nextRoundId, 1);
         assert.equal(result4[2].nextRoundId, 2);
-        assert.equal(result4[3].nextRoundId, 2);
-        assert.equal(result4[4].nextRoundId, 1);
+        assert.equal(result4[3].nextRoundId, 1);
 
         assert.equal(result5[0].nextRoundId, null);
         assert.equal(result5[1].nextRoundId, 1);
@@ -121,6 +120,13 @@ describe('Bracket generator', () => {
         assert.equal(result6[3].nextRoundId, 2);
         assert.equal(result6[4].nextRoundId, 1);
         assert.equal(result6[5].nextRoundId, 5);
-        assert.equal(result6[6].nextRoundId, 5);
+
+        assert.equal(result7[0].nextRoundId, null);
+        assert.equal(result7[1].nextRoundId, 1);
+        assert.equal(result7[2].nextRoundId, 2);
+        assert.equal(result7[3].nextRoundId, 2);
+        assert.equal(result7[4].nextRoundId, 1);
+        assert.equal(result7[5].nextRoundId, 5);
+        assert.equal(result7[6].nextRoundId, 5);
     });
 });

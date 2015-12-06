@@ -51,8 +51,25 @@ describe('Database model', () => {
         });
     });
 
+    it('should fail to insert tournament', (done) => {
+        const players = [
+            { id: 1, name: 'John Doe' }
+        ];
+
+        db.createTournament('Tournament name', players, (success, error) => {
+            assert.equal(error.err, 'Minimum 2 players are required for tournament to be created');
+
+            done();
+        });
+    });
+
     it('should insert tournament', (done) => {
-        db.createTournament('Tournament name', [{ id: 1, name: 'John Doe' }], () => {
+        const players = [
+            { id: 1, name: 'John' },
+            { id: 2, name: 'Mike' }
+        ];
+
+        db.createTournament('Tournament name', players, () => {
             getFromDb(db, 'tournament', '', (data) => {
                 assert.equal(data.length, 1);
                 assert.equal(data[0].name, 'Tournament name');
@@ -83,7 +100,7 @@ describe('Database model', () => {
 
         db.createTournament('Tournament name', players, (tournamentId) => {
             getFromDb(db, 'match', '', (data) => {
-                assert.equal(data.length, 3);
+                assert.equal(data.length, 2);
                 data.forEach((row) => {
                     assert.equal(row.tournament_id, tournamentId);
                     assert.equal(row.player1_score, null);
@@ -138,7 +155,7 @@ describe('Database model', () => {
                     assert.equal(tournament.finished, 0);
 
                     assert.ok(matches);
-                    assert.equal(matches.length, 3);
+                    assert.equal(matches.length, 2);
                     matches.forEach((match) => {
                         assert.ok(match.player1 === null || playerNames.indexOf(match.player1) !== -1);
                         assert.ok(match.player2 === null || playerNames.indexOf(match.player2) !== -1);
