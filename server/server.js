@@ -2,7 +2,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import { shuffle } from 'lodash/collection';
 
-import DB from './database.js';
+import DB from './src/database.js';
 
 const app = express();
 

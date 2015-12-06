@@ -1,7 +1,7 @@
 import assert from 'assert';
 import fs from 'fs';
 
-import DB from '../database.js';
+import DB from '../../src/database.js';
 
 /////////////////////////// HELPER FUNCTIONS ///////////////////////////
 

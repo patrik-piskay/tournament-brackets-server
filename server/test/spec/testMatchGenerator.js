@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { generateMatches } from '../database.js';
+import generateMatches from '../../src/bracketGenerator.js';
 
 /////////////////////////// HELPER FUNCTIONS ///////////////////////////
 

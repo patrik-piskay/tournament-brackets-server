@@ -7,5 +7,5 @@ colors['light'] = '92';
 colors['error stack'] = '92';
 /*eslint-enable*/
 
-require('./testMatchGenerator.js');
-require('./testDatabase.js');
+require('./spec/testMatchGenerator.js');
+require('./spec/testDatabase.js');
