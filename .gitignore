@@ -3,6 +3,7 @@
 
 # Dependency directory
 */node_modules/
+*/elm-stuff/
 
 #SQLite db file
 *.db
