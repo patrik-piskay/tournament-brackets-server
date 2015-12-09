@@ -15,13 +15,15 @@ const getFromDb = (db, table, where, cb) => {
 
 let db;
 
-describe('Database model', () => {
+describe('Database model', function() {
+    this.timeout(3000);
+
     beforeEach(() => {
         db = new DB('test.db');
     });
 
     after(() => {
-        fs.unlink('./test.db');
+        db._db.close(() => fs.unlink('./test.db'));
     });
 
     it('should insert players', (done) => {

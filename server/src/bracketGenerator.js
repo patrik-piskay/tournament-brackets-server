@@ -3,13 +3,13 @@ import crypto from 'crypto';
 const getId = () => crypto.randomBytes(10).toString('hex');
 
 const generateMatches = (tournamentId, players, nextRoundId = null, idGenerator = getId) => {
-    if (!players || !players.length) {
+    if (!players || !(players.length > 1)) {
         return [];
     }
 
     const id = idGenerator();
 
-    if (players.length <= 2) {
+    if (players.length === 2) {
         // first round matches
         const [player1, player2] = players;
 
@@ -17,7 +17,7 @@ const generateMatches = (tournamentId, players, nextRoundId = null, idGenerator 
             id,
             tournamentId,
             player1: player1.id,
-            player2: player2 && player2.id || null,
+            player2: player2.id,
             nextRoundId
         }];
     } else {

@@ -30,20 +30,14 @@ describe('Bracket generator', () => {
         resetIdGenerator();
     });
 
-    it('should return empty array when no players are provided', () => {
+    it('should return empty array when no or 1 players are provided', () => {
         const result1 = generateMatches(1, null, null);
         const result2 = generateMatches(1, [], null);
+        const result3 = generateMatches(1, makePlayers(1), null);
 
         assert.deepEqual(result1, []);
         assert.deepEqual(result2, []);
-    });
-
-    it('should return one item array when 1 or 2 players are provided', () => {
-        const result1 = generateMatches(1, makePlayers(1), null);
-        const result2 = generateMatches(1, makePlayers(2), null);
-
-        assert.equal(result1.length, 1);
-        assert.equal(result2.length, 1);
+        assert.deepEqual(result3, []);
     });
 
     it('should return n-1 item array when n (n > 1) players are provided', () => {

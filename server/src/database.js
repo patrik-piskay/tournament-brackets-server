@@ -10,6 +10,8 @@ class DB {
     }
 
     _init() {
+        this._db.configure('busyTimeout', 2000);
+
         this._db.serialize(() => {
             this._db.run('DROP TABLE if exists tournament');
             this._db.run('DROP TABLE if exists player');
@@ -138,7 +140,12 @@ class DB {
             LEFT JOIN player as player1 on match.player1_id = player1.id
             LEFT JOIN player as player2 on match.player2_id = player2.id
             WHERE tournament.id = ?`, tournamentId, (err, rows) => {
-                if (rows) {
+                if (!err) {
+                    if (!rows.length) {
+                        cb({});
+                        return;
+                    }
+
                     const { tournament_id, name, created_at, finished } = rows[0];
 
                     const tournament = {

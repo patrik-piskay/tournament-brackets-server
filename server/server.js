@@ -11,6 +11,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const db = new DB('brackets.db');
 
+const isEmptyObj = (obj) => (Object.keys(obj).length === 0);
+
 app.get('/', function(req, res) {
     res.json('Hi there!');
 });
@@ -30,7 +32,11 @@ app.get('/get-tournament/:id', function(req, res) {
 
     db.getTournament(id, (tournament, err) => {
         if (!err) {
-            res.status(200).json(tournament);
+            if (!isEmptyObj(tournament)) {
+                res.status(200).json(tournament);
+            } else {
+                res.status(404).json({ err: 'Tournament not found' });
+            }
         } else {
             res.status(500).json(err);
         }
@@ -67,7 +73,7 @@ app.get('/get-match/:matchId', function(req, res) {
         if (err) {
             res.status(500).json(err);
         } else if (!exists) {
-            res.status(404).json({ err: 'Not found' });
+            res.status(404).json({ err: 'Match not found' });
         } else {
             res.status(200).json(match);
         }
