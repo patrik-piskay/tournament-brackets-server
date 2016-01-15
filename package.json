@@ -1,6 +1,6 @@
 {
   "name": "tournament-brackets-server",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Server for Tournament brackets",
   "main": "index.js",
   "scripts": {
