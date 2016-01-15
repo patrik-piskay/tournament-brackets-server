@@ -203,7 +203,7 @@ describe('Database model', function() {
             nextRoundId: null
         }, (err, matchId) => {
             db.setScore(matchId, 1, 1, (error) => {
-                assert.equal(error.err, 'Match has to have a winner, it can not end in a draw');
+                assert.equal(error.err, 'Match has to have a winner, it can not end with a draw');
 
                 done();
             });

@@ -25,7 +25,7 @@ app.get('/', function(req, res) {
 });
 
 app.get('/get-tournaments', function(req, res) {
-    db.getTournaments((tournaments, err) => {
+    db.getTournaments((err, tournaments) => {
         if (!err) {
             res.status(200).json(tournaments);
         } else {
@@ -37,7 +37,7 @@ app.get('/get-tournaments', function(req, res) {
 app.get('/get-tournament/:id', function(req, res) {
     const id = parseInt(req.params.id, 10);
 
-    db.getTournament(id, (tournament, err) => {
+    db.getTournament(id, (err, tournament) => {
         if (!err) {
             if (!isEmptyObj(tournament)) {
                 res.status(200).json(tournament);
@@ -52,12 +52,12 @@ app.get('/get-tournament/:id', function(req, res) {
 
 app.post('/create-tournament', function(req, res) {
     const name = req.body.name;
-    const playerNames = JSON.parse(req.body.players);
+    const playerNames = req.body.players && JSON.parse(req.body.players);
 
     if (name && playerNames) {
-        db.insertPlayers(playerNames, (players, err) => {
+        db.insertPlayers(playerNames, (err, players) => {
             if (!err) {
-                db.createTournament(name, shuffle(players), (tournamentId, error) => {
+                db.createTournament(name, shuffle(players), (error, tournamentId) => {
                     if (!error) {
                         res.status(200).json({ tournamentId });
                     } else {
@@ -69,14 +69,16 @@ app.post('/create-tournament', function(req, res) {
             }
         });
     } else {
-        res.status(400);
+        res.status(400).json({
+            err: 'Both "name" and "players" have to be sent as part of the request'
+        });
     }
 });
 
 app.get('/get-match/:matchId', function(req, res) {
     const matchId = req.params.matchId;
 
-    db.getMatch(matchId, (exists, match, err) => {
+    db.getMatch(matchId, (err, exists, match) => {
         if (err) {
             res.status(500).json(err);
         } else if (!exists) {
@@ -92,12 +94,7 @@ app.post('/set-score/:matchId', function(req, res) {
     const player1Score = parseInt(req.body.player1_score, 10);
     const player2Score = parseInt(req.body.player2_score, 10);
 
-    if (player1Score === player2Score) {
-        // match in tournament can not end with a draw
-        res.status(400);
-    }
-
-    db.setScore(matchId, player1Score, player2Score, (result, err) => {
+    db.setScore(matchId, player1Score, player2Score, (err, result) => {
         if (!err) {
             res.status(200).json(result);
         } else {
