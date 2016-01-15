@@ -248,7 +248,7 @@ class DB {
     setScore(matchId, player1Score, player2Score, cb) {
         if (player1Score === player2Score) {
             cb({
-                err: 'Match has to have a winner, it can not end in a draw'
+                err: 'Match has to have a winner, it can not end with a draw'
             });
             return;
         }
