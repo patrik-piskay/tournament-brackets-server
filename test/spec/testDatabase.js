@@ -37,14 +37,18 @@ describe('Database model', function() {
             'Josh',
             'Mike'
         ];
-        db.insertPlayers(playerNames, (result) => {
+        db.insertPlayers(playerNames, (err1, result) => {
+            assert.equal(err1, null);
+
             const playersFromResponse = result.map((player) => player.name);
 
             assert.notEqual(playersFromResponse.indexOf('John'), -1);
             assert.notEqual(playersFromResponse.indexOf('Josh'), -1);
             assert.notEqual(playersFromResponse.indexOf('Mike'), -1);
 
-            db.getPlayers((playersFromDB) => {
+            db.getPlayers((err2, playersFromDB) => {
+                assert.equal(err2, null);
+
                 const playerNamesFromDB = playersFromDB.map((player) => player.name);
 
                 assert.equal(playersFromDB.length, 3);
@@ -63,7 +67,7 @@ describe('Database model', function() {
             { id: 1, name: 'John Doe' }
         ];
 
-        db.createTournament('Tournament name', players, (success, error) => {
+        db.createTournament('Tournament name', players, (error) => {
             assert.equal(error.err, 'Minimum 2 players are required for tournament to be created');
 
             done();
@@ -105,7 +109,9 @@ describe('Database model', function() {
 
         const playerIds = players.map((player) => player.id);
 
-        db.createTournament('Tournament name', players, (tournamentId) => {
+        db.createTournament('Tournament name', players, (err, tournamentId) => {
+            assert.equal(err, null);
+
             getFromDb(db, 'match', '', (data) => {
                 assert.equal(data.length, 2);
                 data.forEach((row) => {
@@ -130,8 +136,12 @@ describe('Database model', function() {
             player2: null,
             nextRoundId: null
         };
-        db._insertMatch(match, (matchId) => {
-            db.getMatch(matchId, (inserted, result) => {
+        db._insertMatch(match, (err1, matchId) => {
+            assert.equal(err1, null);
+
+            db.getMatch(matchId, (err2, inserted, result) => {
+                assert.equal(err2, null);
+
                 assert.equal(inserted, 1);
                 assert.deepEqual(result, {
                     id: '1',
@@ -152,9 +162,15 @@ describe('Database model', function() {
     it('should retrieve tournament information', (done) => {
         const playerNames = ['Josh', 'Mike', 'John'];
 
-        db.insertPlayers(playerNames, (players) => {
-            db.createTournament('Tournament name', players, (tournamentId) => {
-                db.getTournament(tournamentId, (result) => {
+        db.insertPlayers(playerNames, (err1, players) => {
+            assert.equal(err1, null);
+
+            db.createTournament('Tournament name', players, (err2, tournamentId) => {
+                assert.equal(err2, null);
+
+                db.getTournament(tournamentId, (err3, result) => {
+                    assert.equal(err3, null);
+
                     const { tournament, matches } = result;
 
                     assert.ok(tournament);
@@ -185,9 +201,8 @@ describe('Database model', function() {
             player1: 1,
             player2: 2,
             nextRoundId: null
-        }, (matchId) => {
-            db.setScore(matchId, 1, 1, (success, error) => {
-                assert.equal(success, null);
+        }, (err, matchId) => {
+            db.setScore(matchId, 1, 1, (error) => {
                 assert.equal(error.err, 'Match has to have a winner, it can not end in a draw');
 
                 done();
@@ -196,7 +211,7 @@ describe('Database model', function() {
     });
 
     it('should return error when trying to update score on non existant match', (done) => {
-        db.setScore(0, 2, 1, (success, error) => {
+        db.setScore(0, 2, 1, (error) => {
             assert.equal(error.err, 'Match does not exists');
 
             done();
@@ -210,10 +225,9 @@ describe('Database model', function() {
             player1: 1,
             player2: 2,
             nextRoundId: null
-        }, (matchId) => {
+        }, (err, matchId) => {
             db.setScore(matchId, 2, 1, () => {
-                db.setScore(matchId, 2, 1, (success, error) => {
-                    assert.equal(success, null);
+                db.setScore(matchId, 2, 1, (error) => {
                     assert.equal(error.err, 'Score has already been set for this match');
 
                     done();
@@ -229,9 +243,8 @@ describe('Database model', function() {
             player1: null,
             player2: null,
             nextRoundId: null
-        }, (matchId) => {
-            db.setScore(matchId, 2, 1, (success, error) => {
-                assert.equal(success, null);
+        }, (err, matchId) => {
+            db.setScore(matchId, 2, 1, (error) => {
                 assert.equal(error.err, 'Less than 2 players are assigned to the match, cannot set score until both players are assigned to it.');
 
                 done();
@@ -246,9 +259,8 @@ describe('Database model', function() {
             player1: 1,
             player2: null,
             nextRoundId: null
-        }, (matchId) => {
-            db.setScore(matchId, 2, 1, (success, error) => {
-                assert.equal(success, null);
+        }, (err, matchId) => {
+            db.setScore(matchId, 2, 1, (error) => {
                 assert.equal(error.err, 'Less than 2 players are assigned to the match, cannot set score until both players are assigned to it.');
 
                 done();
@@ -257,19 +269,26 @@ describe('Database model', function() {
     });
 
     it('should update score in match and set "played at" timestamps', (done) => {
-        db._insertTournament('Test', (tournamentId) => {
+        db._insertTournament('Test', (err1, tournamentId) => {
+            assert.equal(err1, null);
+
             db._insertMatch({
                 id: 1,
                 tournamentId: tournamentId,
                 player1: 1,
                 player2: 2,
                 nextRoundId: null
-            }, (matchId) => {
+            }, (err2, matchId) => {
+                assert.equal(err2, null);
+
                 db.setScore(matchId, 1, 1, () => {
-                    db.setScore(matchId, 2, 1, (result) => {
+                    db.setScore(matchId, 2, 1, (err3, result) => {
+                        assert.equal(err3, null);
                         assert.ok(result);
 
-                        db.getMatch(matchId, (exists, match) => {
+                        db.getMatch(matchId, (err4, exists, match) => {
+                            assert.equal(err4, null);
+
                             assert.equal(match.player1_score, 2);
                             assert.equal(match.player2_score, 1);
                             assert.notEqual(match.played_at, null);
@@ -289,9 +308,13 @@ describe('Database model', function() {
             player1: null,
             player2: null,
             nextRoundId: null
-        }, (matchId) => {
+        }, (err1, matchId) => {
+            assert.equal(err1, null);
+
             db._sendWinnerToTheNextRound(matchId, 1, () => {
-                db.getMatch(matchId, (exists, match) => {
+                db.getMatch(matchId, (err2, exists, match) => {
+                    assert.equal(err2, null);
+
                     assert.equal(match.player1_id, 1);
                     assert.equal(match.player2_id, null);
 
@@ -302,7 +325,7 @@ describe('Database model', function() {
     });
 
     it('should fail when next round match does not exists', (done) => {
-        db._sendWinnerToTheNextRound(0, 1, (success, error) => {
+        db._sendWinnerToTheNextRound(0, 1, (error) => {
             assert.equal(error.err, 'Next round match does not exists');
 
             done();
@@ -316,9 +339,11 @@ describe('Database model', function() {
             player1: 1,
             player2: null,
             nextRoundId: null
-        }, (matchId) => {
+        }, (err1, matchId) => {
             db._sendWinnerToTheNextRound(matchId, 2, () => {
-                db.getMatch(matchId, (exists, match) => {
+                db.getMatch(matchId, (err2, exists, match) => {
+                    assert.equal(err2, null);
+
                     assert.equal(match.player1_id, 1);
                     assert.equal(match.player2_id, 2);
 
@@ -335,8 +360,8 @@ describe('Database model', function() {
             player1: 1,
             player2: 2,
             nextRoundId: null
-        }, (matchId) => {
-            db._sendWinnerToTheNextRound(matchId, 3, (success, error) => {
+        }, (err, matchId) => {
+            db._sendWinnerToTheNextRound(matchId, 3, (error) => {
                 assert.equal(error.err, 'Both players are already assigned to the match');
 
                 done();
@@ -345,7 +370,7 @@ describe('Database model', function() {
     });
 
     it('should update next round with a winner of the previous match', (done) => {
-        db._insertTournament('Test', (tournamentId) => {
+        db._insertTournament('Test', (err1, tournamentId) => {
             // insert final match
             db._insertMatch({
                 id: 1,
@@ -353,7 +378,7 @@ describe('Database model', function() {
                 player1: null,
                 player2: null,
                 nextRoundId: null
-            }, (round2matchId) => {
+            }, (err2, round2matchId) => {
                 // insert first semi-final
                 db._insertMatch({
                     id: 2,
@@ -361,7 +386,7 @@ describe('Database model', function() {
                     player1: 1,
                     player2: 2,
                     nextRoundId: round2matchId
-                }, (round1match1Id) => {
+                }, (err3, round1match1Id) => {
                     // insert second semi-final
                     db._insertMatch({
                         id: 3,
@@ -369,12 +394,12 @@ describe('Database model', function() {
                         player1: 3,
                         player2: 4,
                         nextRoundId: round2matchId
-                    }, (round1match2Id) => {
+                    }, (err4, round1match2Id) => {
                         // set result of the first semi-final match
                         db.setScore(round1match1Id, 2, 1, () => {
                             // check update of final match
                             // (winner of the first semi-final match set as player1)
-                            db.getMatch(round2matchId, (exists1, match1) => {
+                            db.getMatch(round2matchId, (err5, exists1, match1) => {
                                 assert.equal(match1.player1_id, 1);
                                 assert.equal(match1.player2_id, null);
 
@@ -382,7 +407,7 @@ describe('Database model', function() {
                                 db.setScore(round1match2Id, 1, 2, () => {
                                     // check update of final match
                                     // (winner of the seccond semi-final match set as player2)
-                                    db.getMatch(round2matchId, (exists2, match2) => {
+                                    db.getMatch(round2matchId, (err6, exists2, match2) => {
                                         assert.equal(match2.player1_id, 1);
                                         assert.equal(match2.player2_id, 4);
 
@@ -398,9 +423,11 @@ describe('Database model', function() {
     });
 
     it('should set tournament as finished', (done) => {
-        db._insertTournament('Test', (tournamentId) => {
+        db._insertTournament('Test', (err1, tournamentId) => {
             db._setTournamentAsFinished(tournamentId, () => {
-                db.getTournament(tournamentId, (result) => {
+                db.getTournament(tournamentId, (err2, result) => {
+                    assert.equal(err2, null);
+
                     const { tournament } = result;
 
                     assert.equal(tournament.finished, 1);
@@ -412,7 +439,7 @@ describe('Database model', function() {
     });
 
     it('should return error when trying to set non existing tournament as finished', (done) => {
-        db._setTournamentAsFinished(0, (success, error) => {
+        db._setTournamentAsFinished(0, (error) => {
             assert.equal(error.err, 'Tournament does not exists');
 
             done();
@@ -420,7 +447,7 @@ describe('Database model', function() {
     });
 
     it('should set tournament as finished when the final match score is set', (done) => {
-        db._insertTournament('Test', (tournamentId) => {
+        db._insertTournament('Test', (err1, tournamentId) => {
             // insert final match
             db._insertMatch({
                 id: 1,
@@ -428,9 +455,9 @@ describe('Database model', function() {
                 player1: 1,
                 player2: 2,
                 nextRoundId: null
-            }, (matchId) => {
+            }, (err2, matchId) => {
                 db.setScore(matchId, 1, 2, () => {
-                    db.getTournament(tournamentId, (result) => {
+                    db.getTournament(tournamentId, (err3, result) => {
                         const { tournament } = result;
 
                         assert.equal(tournament.finished, 1);

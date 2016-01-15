@@ -41,9 +41,9 @@ class DB {
     _insertTournament(name, cb) {
         this._db.run(`INSERT INTO tournament (name) VALUES (?)`, [name], function(err) {
             if (!err && this.lastID) {
-                cb(this.lastID);
+                cb(null, this.lastID);
             } else {
-                cb(null, err);
+                cb(err);
             }
         });
     }
@@ -53,15 +53,15 @@ class DB {
             `INSERT INTO match (id, tournament_id, player1_id, player2_id, next_round_id) VALUES (?,?,?,?,?)`,
             [id, tournamentId, player1, player2, nextRoundId],
             function(err) {
-                cb(this.lastID, err);
+                cb(err, this.lastID);
             }
         );
     }
 
     _sendWinnerToTheNextRound(nextRoundId, winnerId, cb) {
-        this.getMatch(nextRoundId, (exists, match, error) => {
+        this.getMatch(nextRoundId, (error, exists, match) => {
             if (error) {
-                cb(null, error);
+                cb(error);
                 return;
             }
 
@@ -72,7 +72,7 @@ class DB {
                 } else if (match.player2_id === null) {
                     slot = 'player2_id';
                 } else {
-                    cb(null, {
+                    cb({
                         err: 'Both players are already assigned to the match'
                     });
                     return;
@@ -84,15 +84,11 @@ class DB {
                             $id: nextRoundId,
                             $winnerId: winnerId
                         }, (err) => {
-                            if (!err) {
-                                cb(1);
-                            } else {
-                                cb(null, err);
-                            }
+                            cb(err, 1);
                         }
                 );
             } else {
-                cb(null, {
+                cb({
                     err: 'Next round match does not exists'
                 });
             }
@@ -105,14 +101,14 @@ class DB {
                 WHERE id = ?`, tournamentId, function(err) {
                     if (!err) {
                         if (this.changes) {
-                            cb(1);
+                            cb(null, 1);
                         } else {
-                            cb(null, {
+                            cb({
                                 err: 'Tournament does not exists'
                             });
                         }
                     } else {
-                        cb(null, err);
+                        cb(err);
                     }
                 }
         );
@@ -122,7 +118,7 @@ class DB {
 
     getTournaments(cb) {
         this._db.all(`SELECT *, datetime(created_at, 'localtime') as created_at FROM tournament`, (err, rows) => {
-            cb(rows, err);
+            cb(err, rows);
         });
     }
 
@@ -138,7 +134,7 @@ class DB {
             WHERE tournament.id = ?`, tournamentId, (err, rows) => {
                 if (!err) {
                     if (!rows.length) {
-                        cb({});
+                        cb(null, {});
                         return;
                     }
 
@@ -168,12 +164,12 @@ class DB {
                         };
                     });
 
-                    cb({
+                    cb(null, {
                         tournament,
                         matches
                     });
                 } else {
-                    cb(null, err);
+                    cb(err);
                 }
             }
         );
@@ -181,7 +177,7 @@ class DB {
 
     insertPlayers(playerNames, cb) {
         if (!playerNames || !playerNames.length) {
-            cb({});
+            cb(null, {});
             return;
         }
 
@@ -196,10 +192,10 @@ class DB {
                     });
 
                     if (players.length === playerNames.length) {
-                        cb(players);
+                        cb(null, players);
                     }
                 } else {
-                    cb(null, err);
+                    cb(err);
                 }
             });
         });
@@ -207,51 +203,51 @@ class DB {
 
     getPlayers(cb) {
         this._db.all(`SELECT * FROM player`, (err, rows) => {
-            cb(rows, err);
+            cb(err, rows);
         });
     }
 
     createTournament(name, players, cb) {
         if (players.length < 2) {
-            cb(null, {
+            cb({
                 err: 'Minimum 2 players are required for tournament to be created'
             });
             return;
         }
 
-        this._insertTournament(name, (tournamentId, err) => {
+        this._insertTournament(name, (err, tournamentId) => {
             if (tournamentId) {
                 const matches = generateMatches(tournamentId, players);
                 let matchesInserted = 0;
 
                 matches.forEach((match) => {
-                    this._insertMatch(match, (inserted, error) => {
+                    this._insertMatch(match, (error, inserted) => {
                         if (inserted) {
                             matchesInserted++;
 
                             if (matchesInserted === players.length - 1) {
-                                cb(tournamentId);
+                                cb(error, tournamentId);
                             }
                         } else {
-                            cb(null, error);
+                            cb(error);
                         }
                     });
                 });
             } else {
-                cb(null, err);
+                cb(err);
             }
         });
     }
 
     getMatch(matchId, cb) {
         this._db.all(`SELECT *, datetime(played_at, 'localtime') as played_at FROM match WHERE id = ?`, matchId, (err, rows) => {
-            cb(rows.length, rows[0], err);
+            cb(err, rows.length, rows[0]);
         });
     }
 
     setScore(matchId, player1Score, player2Score, cb) {
         if (player1Score === player2Score) {
-            cb(null, {
+            cb({
                 err: 'Match has to have a winner, it can not end in a draw'
             });
             return;
@@ -259,22 +255,22 @@ class DB {
 
         const self = this;
 
-        this.getMatch(matchId, (exists, match, err) => {
+        this.getMatch(matchId, (err, exists, match) => {
             if (err) {
-                cb(null, err);
+                cb(err);
                 return;
             }
 
             if (exists) {
                 if (match.player1_id === null || match.player2_id === null) {
-                    cb(null, {
+                    cb({
                         err: 'Less than 2 players are assigned to the match, cannot set score until both players are assigned to it.'
                     });
                     return;
                 }
 
                 if (match.player1_score !== null && match.player2_score !== null) {
-                    cb(null, {
+                    cb({
                         err: 'Score has already been set for this match'
                     });
                     return;
@@ -292,21 +288,21 @@ class DB {
                             if (!err) {
                                 if (match.next_round_id) {
                                     const winnerId = player1Score > player2Score ? match.player1_id : match.player2_id;
-                                    self._sendWinnerToTheNextRound(match.next_round_id, winnerId, (success, _error) => {
-                                        cb(success, _error);
+                                    self._sendWinnerToTheNextRound(match.next_round_id, winnerId, (_error, success) => {
+                                        cb(_error, success);
                                     });
                                 } else {
-                                    self._setTournamentAsFinished(match.tournament_id, (success, _error) => {
-                                        cb(success, _error);
+                                    self._setTournamentAsFinished(match.tournament_id, (_error, success) => {
+                                        cb(_error, success);
                                     });
                                 }
                             } else {
-                                cb(null, error);
+                                cb(error);
                             }
                         }
                 );
             } else {
-                cb(null, {
+                cb({
                     err: 'Match does not exists'
                 });
             }
