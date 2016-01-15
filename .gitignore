@@ -2,8 +2,9 @@
 *.orig
 
 # Dependency directory
-*/node_modules/
-*/elm-stuff/
+node_modules
 
 #SQLite db file
 *.db
+
+*.log

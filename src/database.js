@@ -13,10 +13,6 @@ class DB {
         this._db.configure('busyTimeout', 2000);
 
         this._db.serialize(() => {
-            this._db.run('DROP TABLE if exists tournament');
-            this._db.run('DROP TABLE if exists player');
-            this._db.run('DROP TABLE if exists match');
-
             this._db.run(`CREATE TABLE if not exists tournament (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 name            TEXT,

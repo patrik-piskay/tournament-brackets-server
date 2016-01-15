@@ -1,5 +1,6 @@
 import express from 'express';
 import bodyParser from 'body-parser';
+import cors from 'express-cors';
 import { shuffle } from 'lodash/collection';
 
 import DB from './src/database.js';
@@ -8,6 +9,12 @@ const app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors({
+    allowedOrigins: [
+        'localhost',
+        'localhost:8000'
+    ]
+}));
 
 const db = new DB('brackets.db');
 

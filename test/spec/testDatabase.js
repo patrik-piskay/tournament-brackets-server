@@ -18,12 +18,17 @@ let db;
 describe('Database model', function() {
     this.timeout(3000);
 
-    beforeEach(() => {
+    beforeEach((done) => {
         db = new DB('test.db');
+
+        done();
     });
 
-    after(() => {
-        db._db.close(() => fs.unlink('./test.db'));
+    afterEach((done) => {
+        db._db.close(() => {
+            fs.unlink('./test.db');
+            done();
+        });
     });
 
     it('should insert players', (done) => {
@@ -232,7 +237,9 @@ describe('Database model', function() {
                 done();
             });
         });
+    });
 
+    it('should return error when trying to set a score on match where less than 2 players are assigned to it', (done) => {
         db._insertMatch({
             id: 1,
             tournamentId: 1,
