@@ -7,7 +7,7 @@
     "start": "node index.js",
     "start:dev": "nodemon index.js",
     "test": "mocha test/index.js",
-    "lint": "eslint . || exit 0"
+    "lint": "eslint ."
   },
   "author": "Patrik Piskay",
   "license": "ISC",
