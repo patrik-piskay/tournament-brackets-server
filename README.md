@@ -1,6 +1,6 @@
 # Tournament brackets server
 
-[![Travis](https://img.shields.io/travis/patrik-piskay/tournament-brackets-server.svg?style=flat-square)](https://travis-ci.org/patrik-piskay/tournament-brackets-server)
+[![Travis](https://img.shields.io/travis/patrik-piskay/tournament-brackets-server.svg?style=flat-square)](https://travis-ci.org/patrik-piskay/tournament-brackets-server) [![npm](https://img.shields.io/npm/v/tournament-brackets-server.svg?style=flat-square)](https://www.npmjs.com/package/tournament-brackets-server)
 
 ## Install
 
