@@ -59,7 +59,13 @@ app.post('/create-tournament', function(req, res) {
             if (!err) {
                 db.createTournament(name, shuffle(players), (error, tournamentId) => {
                     if (!error) {
-                        res.status(200).json({ tournamentId });
+                        db.getTournament(tournamentId, (err, tournament) => {
+                            if (!err) {
+                                res.status(200).json(tournament);
+                            } else {
+                                res.status(200).json({ tournamentId });
+                            }
+                        });
                     } else {
                         res.status(500).json(error);
                     }
@@ -94,9 +100,28 @@ app.post('/set-score/:matchId', function(req, res) {
     const player1Score = parseInt(req.body.player1_score, 10);
     const player2Score = parseInt(req.body.player2_score, 10);
 
-    db.setScore(matchId, player1Score, player2Score, (err, result) => {
+    if (isNaN(player1Score) || isNaN(player2Score)) {
+        res.status(400).json({
+            err: 'Data sent in wrong format'
+        });
+        return;
+    }
+
+    db.setScore(matchId, player1Score, player2Score, (err) => {
         if (!err) {
-            res.status(200).json(result);
+            db.getMatch(matchId, (error, exists, match) => {
+                if (!error && exists) {
+                    res.status(200).json({
+                        done: true,
+                        match
+                    });
+                } else {
+                    res.status(200).json({
+                        done: true
+                    });
+                }
+            });
+
         } else {
             res.status(500).json(err);
         }

@@ -201,7 +201,7 @@ describe('Database model', function() {
         });
     });
 
-    it('should return error when trying to update score with a draw', (done) => {
+    it('should return error when trying to update score in a draw', (done) => {
         db._insertMatch({
             id: 1,
             tournamentId: 1,
@@ -210,7 +210,7 @@ describe('Database model', function() {
             nextRoundId: null
         }, (err, matchId) => {
             db.setScore(matchId, 1, 1, (error) => {
-                assert.equal(error.err, 'Match has to have a winner, it can not end with a draw');
+                assert.equal(error.err, 'Match has to have a winner, it can not end in a draw');
 
                 done();
             });
