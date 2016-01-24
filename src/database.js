@@ -157,10 +157,10 @@ class DB {
                             id,
                             player1,
                             player2,
-                            player1Score: player1_score,
-                            player2Score: player2_score,
-                            nextRoundId: next_round_id,
-                            playedAt: played_at
+                            player1_score,
+                            player2_score,
+                            next_round_id,
+                            played_at
                         };
                     });
 

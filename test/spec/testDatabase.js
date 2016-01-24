@@ -189,10 +189,10 @@ describe('Database model', function() {
                     matches.forEach((match) => {
                         assert.ok(match.player1 === null || playerNames.indexOf(match.player1) !== -1);
                         assert.ok(match.player2 === null || playerNames.indexOf(match.player2) !== -1);
-                        assert.equal(match.player1Score, null);
-                        assert.equal(match.player2Score, null);
-                        assert.equal(match.playedAt, null);
-                        assert.ok(match.nextRoundId === null || typeof match.nextRoundId === 'string');
+                        assert.equal(match.player1_score, null);
+                        assert.equal(match.player2_score, null);
+                        assert.equal(match.played_at, null);
+                        assert.ok(match.next_round_id === null || typeof match.next_round_id === 'string');
                     });
 
                     done();
