@@ -129,32 +129,39 @@ describe('Database model', function() {
     });
 
     it('should retrieve specific match', (done) => {
+        const playerNames = ['Josh', 'Mike', 'John'];
+
         const match = {
             id: 1,
             tournamentId: 1,
-            player1: null,
-            player2: null,
+            player1: 1,
+            player2: 2,
             nextRoundId: null
         };
-        db._insertMatch(match, (err1, matchId) => {
-            assert.equal(err1, null);
 
-            db.getMatch(matchId, (err2, inserted, result) => {
-                assert.equal(err2, null);
+        db.insertPlayers(playerNames, (err1, players) => {
+            db._insertMatch(match, (err1, matchId) => {
+                assert.equal(err1, null);
 
-                assert.equal(inserted, 1);
-                assert.deepEqual(result, {
-                    id: '1',
-                    tournament_id: match.tournamentId,
-                    player1_id: match.player1,
-                    player2_id: match.player2,
-                    player1_score: null,
-                    player2_score: null,
-                    next_round_id: match.nextRoundId,
-                    played_at: null
+                db.getMatch(matchId, (err2, inserted, result) => {
+                    assert.equal(err2, null);
+
+                    assert.equal(inserted, 1);
+                    assert.deepEqual(result, {
+                        id: '1',
+                        tournament_id: match.tournamentId,
+                        player1_id: match.player1,
+                        player2_id: match.player2,
+                        player1: players[0].name,
+                        player2: players[1].name,
+                        player1_score: null,
+                        player2_score: null,
+                        next_round_id: match.nextRoundId,
+                        played_at: null
+                    });
+
+                    done();
                 });
-
-                done();
             });
         });
     });

@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({
     allowedOrigins: [
         'localhost',
-        'localhost:8000'
+        'localhost:8080'
     ]
 }));
 

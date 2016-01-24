@@ -240,7 +240,19 @@ class DB {
     }
 
     getMatch(matchId, cb) {
-        this._db.all(`SELECT *, datetime(played_at, 'localtime') as played_at FROM match WHERE id = ?`, matchId, (err, rows) => {
+        this._db.all(`
+            SELECT
+                match.*,
+                player1.name as player1,
+                player2.name as player2,
+                datetime(played_at, 'localtime') as played_at
+            FROM
+                match
+            LEFT JOIN player as player1 on match.player1_id = player1.id
+            LEFT JOIN player as player2 on match.player2_id = player2.id
+            WHERE
+                match.id = ?
+        `, matchId, (err, rows) => {
             cb(err, rows.length, rows[0]);
         });
     }
