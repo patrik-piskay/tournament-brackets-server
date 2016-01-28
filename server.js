@@ -8,7 +8,6 @@ import DB from './src/database.js';
 const app = express();
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({
     allowedOrigins: [
         'localhost',
@@ -24,7 +23,7 @@ app.get('/', function(req, res) {
     res.json('Hi there!');
 });
 
-app.get('/get-tournaments', function(req, res) {
+app.get('/tournaments', function(req, res) {
     db.getTournaments((err, tournaments) => {
         if (!err) {
             res.status(200).json(tournaments);
@@ -34,7 +33,7 @@ app.get('/get-tournaments', function(req, res) {
     });
 });
 
-app.get('/get-tournament/:id', function(req, res) {
+app.get('/tournament/:id', function(req, res) {
     const id = parseInt(req.params.id, 10);
 
     db.getTournament(id, (err, tournament) => {
@@ -50,9 +49,9 @@ app.get('/get-tournament/:id', function(req, res) {
     });
 });
 
-app.post('/create-tournament', function(req, res) {
+app.post('/tournament', function(req, res) {
     const name = req.body.name;
-    const playerNames = req.body.players && JSON.parse(req.body.players);
+    const playerNames = req.body.players;
 
     if (name && playerNames) {
         db.insertPlayers(playerNames, (err, players) => {
@@ -81,7 +80,7 @@ app.post('/create-tournament', function(req, res) {
     }
 });
 
-app.get('/get-match/:matchId', function(req, res) {
+app.get('/match/:matchId', function(req, res) {
     const matchId = req.params.matchId;
 
     db.getMatch(matchId, (err, exists, match) => {
@@ -95,7 +94,7 @@ app.get('/get-match/:matchId', function(req, res) {
     });
 });
 
-app.post('/set-score/:matchId', function(req, res) {
+app.post('/match/:matchId/set-score', function(req, res) {
     const matchId = req.params.matchId;
     const player1Score = parseInt(req.body.player1_score, 10);
     const player2Score = parseInt(req.body.player2_score, 10);
