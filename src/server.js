@@ -3,7 +3,7 @@ import bodyParser from 'body-parser';
 import cors from 'express-cors';
 import { shuffle } from 'lodash/collection';
 
-import DB from './src/database.js';
+import DB from './database.js';
 
 const app = express();
 
@@ -15,7 +15,7 @@ app.use(cors({
     ]
 }));
 
-const db = new DB('brackets.db');
+const db = new DB('../brackets.db');
 
 const isEmptyObj = (obj) => (Object.keys(obj).length === 0);
 
